@@ -1,0 +1,61 @@
+Private WithEvents inboxItems As Outlook.Items
+
+Private Sub Application_Startup()
+    Dim outlookNamespace As Outlook.NameSpace
+    Dim targetFolder As Outlook.Folder
+
+    Set outlookNamespace = Application.GetNamespace("MAPI")
+    Set targetFolder = outlookNamespace.GetDefaultFolder(olFolderInbox).Folders("Sample")
+    Set inboxItems = targetFolder.Items
+End Sub
+
+Private Sub inboxItems_ItemAdd(ByVal Item As Object)
+    If TypeOf Item Is Outlook.MailItem Then
+        Dim mail As Outlook.MailItem
+        Set mail = Item
+
+        ' Only proceed if it's a standard email (not a calendar invite or meeting request)
+        If mail.MessageClass <> "IPM.Note" Then Exit Sub
+
+        Dim filePath As String
+        filePath = "C:\Users\username\Desktop\Sample.txt
+"
+        Dim senderName As String
+        senderName = mail.senderName
+        Dim fileContent As String
+        Dim line As String
+        Dim updatedContent As String
+        Dim found As Boolean
+        found = False
+
+        ' Read existing content
+        If Dir(filePath) <> "" Then
+            Open filePath For Input As #1
+            Do Until EOF(1)
+                Line Input #1, line
+                If InStr(line, senderName) > 0 Then
+                    ' Replace the line with updated info
+                    updatedContent = updatedContent & senderName & " | " & mail.Subject & " | " & mail.ReceivedTime & vbCrLf
+                    found = True
+                Else
+                    updatedContent = updatedContent & line & vbCrLf
+                End If
+            Loop
+            Close #1
+        End If
+
+        ' If sender not found, append new line
+        If Not found Then
+            updatedContent = updatedContent & senderName & " | " & mail.Subject & " | " & mail.ReceivedTime & vbCrLf
+        End If
+
+        ' Write updated content back to file
+        Open filePath For Output As #1
+        Print #1, updatedContent
+        Close #1
+
+        ' Open or refresh in Notepad++
+        Shell """C:\Program Files\Notepad++\notepad++.exe"" " & filePath, vbNormalFocus
+    End If
+End Sub
+
