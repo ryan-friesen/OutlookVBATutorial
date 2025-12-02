@@ -1,3 +1,11 @@
+    '1. Go to File > Options > Trust Center > Trust Center Settings > Macro Settings, then select "Notifications for all macros". This allows the macros to run after you select "Enable all Macros" when Outlook opens
+    '2. Press alt + F11 with the Outlook window in focus, or enable the developer tab in File > Options > Customize Ribbon to access the "Microsoft Visual Basic for Applications" window
+    '3. Open the Visual Basic for Applications window, then navigate to View > Project Explorer to open the VbaProject.OTM window
+    '4. Expand VbaProject.OTM, right-click on "Microsoft Outlook Projects" and select Insert > Module
+    '5. Paste this script into the window, input your Folders and filePath value below
+    '6. Navigate to File > Save VbaProject.OTM
+    '7. Install Notepad++, then navigate to Preferences > MISC. > Enable File Status Auto-Detection and check the "Update silently" box so that the window dynamically updates
+
 Private WithEvents inboxItems As Outlook.Items
 
 Private Sub Application_Startup()
@@ -5,7 +13,7 @@ Private Sub Application_Startup()
     Dim targetFolder As Outlook.Folder
 
     Set outlookNamespace = Application.GetNamespace("MAPI")
-    Set targetFolder = outlookNamespace.GetDefaultFolder(olFolderInbox).Folders("Sample")
+    Set targetFolder = outlookNamespace.GetDefaultFolder(olFolderInbox).Folders("YOUR DL FOLDER NAME")
     Set inboxItems = targetFolder.Items
 End Sub
 
@@ -14,48 +22,40 @@ Private Sub inboxItems_ItemAdd(ByVal Item As Object)
         Dim mail As Outlook.MailItem
         Set mail = Item
 
-        ' Only proceed if it's a standard email (not a calendar invite or meeting request)
+        ' Only proceeds if it's a standard email (not a calendar invite or meeting request)
         If mail.MessageClass <> "IPM.Note" Then Exit Sub
 
         Dim filePath As String
-        filePath = "C:\Users\username\Desktop\Sample.txt
-"
+        filePath = "C:\Users\[Username]\Desktop\FILENAME.txt"
         Dim senderName As String
         senderName = mail.senderName
-        Dim fileContent As String
         Dim line As String
         Dim updatedContent As String
-        Dim found As Boolean
-        found = False
+        Dim newLine As String
 
-        ' Read existing content
+        newLine = senderName & " | " & mail.Subject & " | " & mail.ReceivedTime & vbCrLf & vbCrLf  ' Add blank line
+
+        ' This reads the existing content, then removes previous entries from the sender
         If Dir(filePath) <> "" Then
             Open filePath For Input As #1
             Do Until EOF(1)
                 Line Input #1, line
-                If InStr(line, senderName) > 0 Then
-                    ' Replace the line with updated info
-                    updatedContent = updatedContent & senderName & " | " & mail.Subject & " | " & mail.ReceivedTime & vbCrLf
-                    found = True
-                Else
+                If InStr(line, senderName) = 0 Then
                     updatedContent = updatedContent & line & vbCrLf
                 End If
             Loop
             Close #1
         End If
 
-        ' If sender not found, append new line
-        If Not found Then
-            updatedContent = updatedContent & senderName & " | " & mail.Subject & " | " & mail.ReceivedTime & vbCrLf
-        End If
+        ' Prepends the new line to the refactored content
+        updatedContent = newLine & updatedContent
 
-        ' Write updated content back to file
+        ' Writes updated content back to file
         Open filePath For Output As #1
         Print #1, updatedContent
         Close #1
 
-        ' Open or refresh in Notepad++
-        Shell """C:\Program Files\Notepad++\notepad++.exe"" " & filePath, vbNormalFocus
+        ' Opens or refreshes in Notepad++
+        Shell ""C:\Program Files\Notepad++\notepad++.exe" " & filePath, vbNormalFocus
     End If
 End Sub
-
