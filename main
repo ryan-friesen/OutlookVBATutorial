@@ -6,6 +6,7 @@
     '6. Navigate to File > Save VbaProject.OTM
     '7. Install Notepad++, then navigate to Preferences > MISC. > Enable File Status Auto-Detection and check the "Update silently" box so that the window dynamically updates
 
+
 Private WithEvents inboxItems As Outlook.Items
 
 Private Sub Application_Startup()
@@ -13,7 +14,7 @@ Private Sub Application_Startup()
     Dim targetFolder As Outlook.Folder
 
     Set outlookNamespace = Application.GetNamespace("MAPI")
-    Set targetFolder = outlookNamespace.GetDefaultFolder(olFolderInbox).Folders("YOUR DL FOLDER NAME")
+    Set targetFolder = outlookNamespace.GetDefaultFolder(olFolderInbox).Folders("DL ITS CIT")
     Set inboxItems = targetFolder.Items
 End Sub
 
@@ -22,40 +23,45 @@ Private Sub inboxItems_ItemAdd(ByVal Item As Object)
         Dim mail As Outlook.MailItem
         Set mail = Item
 
-        ' Only proceeds if it's a standard email (not a calendar invite or meeting request)
         If mail.MessageClass <> "IPM.Note" Then Exit Sub
 
         Dim filePath As String
-        filePath = "C:\Users\[Username]\Desktop\FILENAME.txt"
+        filePath = "C:\Users\rfriesen\Desktop\DLITSCIT.txt"
         Dim senderName As String
         senderName = mail.senderName
         Dim line As String
         Dim updatedContent As String
         Dim newLine As String
+        Dim todayDate As String
 
-        newLine = senderName & " | " & mail.Subject & " | " & mail.ReceivedTime & vbCrLf & vbCrLf  ' Add blank line
+        ' Today's date for comparison
+        todayDate = Format(Date, "mm/dd/yyyy")
 
-        ' This reads the existing content, then removes previous entries from the sender
+        ' New entry with date included
+        newLine = senderName & " | " & mail.Subject & " | " & Format(mail.ReceivedTime, "mm/dd/yyyy hh:mm AM/PM") & vbCrLf & vbCrLf
+
+        ' Reads the existing file and keeps only today's entries
         If Dir(filePath) <> "" Then
             Open filePath For Input As #1
             Do Until EOF(1)
                 Line Input #1, line
-                If InStr(line, senderName) = 0 Then
+                ' Keep line only if it contains today's date
+                If InStr(line, todayDate) > 0 Then
                     updatedContent = updatedContent & line & vbCrLf
                 End If
             Loop
             Close #1
         End If
 
-        ' Prepends the new line to the refactored content
+        ' Adds the new line at the top
         updatedContent = newLine & updatedContent
 
-        ' Writes updated content back to file
+        ' Writes updated content back to txt file
         Open filePath For Output As #1
         Print #1, updatedContent
         Close #1
 
-        ' Opens or refreshes in Notepad++
-        Shell ""C:\Program Files\Notepad++\notepad++.exe" " & filePath, vbNormalFocus
+        ' Open or refresh in Notepad++
+        Shell """C:\Program Files\Notepad++\notepad++.exe"" " & filePath, vbNormalFocus
     End If
 End Sub
